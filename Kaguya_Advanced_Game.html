@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>獸人世界 · 銀月精靈 Kaguya</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0d1117; color: #e6edf3; font-family: "Noto Serif TC", serif; height: 100vh; overflow: hidden; }
+  .app { display: flex; height: 100vh; }
+  .portrait-panel { width: 34%; background: #11151c; position: relative; border-right: 1px solid #21262d; }
+  .portrait-panel img, .portrait-avatar { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+  .portrait-avatar { display: flex; align-items: center; justify-content: center; font-size: 100px; background: #161b22; color: #8b949e; }
+  .portrait-name { position: absolute; bottom: 16px; left: 16px; background: rgba(0,0,0,0.65); padding: 6px 12px; border-radius: 6px; }
+  .story-panel { flex: 1; display: flex; flex-direction: column; padding: 16px; overflow-y: auto; }
+  .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 13px; color: #8b949e; }
+  #story { flex: 1; font-size: 16px; line-height: 1.85; white-space: pre-wrap; margin-bottom: 12px; }
+  .choices { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+  .choices button { background: #161b22; border: 1px solid #30363d; color: #e6edf3; padding: 11px 14px; border-radius: 8px; text-align: left; cursor: pointer; font-size: 14.5px; }
+  .choices button:hover { background: #21262d; }
+  .free-row { display: flex; gap: 8px; }
+  .free-row input { flex: 1; background: #0d1117; border: 1px solid #30363d; color: #e6edf3; padding: 10px 12px; border-radius: 8px; }
+  .free-row button, .ctrl-btn { background: #21262d; border: 1px solid #30363d; color: #e6edf3; padding: 8px 12px; border-radius: 6px; cursor: pointer; }
+  .ctrl-row { display: flex; gap: 8px; margin-top: 8px; justify-content: flex-end; }
+  .sidebar { width: 300px; background: #0d1117; border-left: 1px solid #21262d; overflow-y: auto; padding: 12px; font-size: 13px; }
+  .sidebar h3 { font-size: 12px; color: #8b949e; margin: 14px 0 8px; }
+  .char-card { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 8px; margin-bottom: 6px; background: #161b22; }
+  .char-card img, .char-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+  .char-avatar { display: flex; align-items: center; justify-content: center; background: #21262d; font-weight: bold; }
+  .char-info { flex: 1; }
+  .char-name { font-weight: 500; }
+  .char-status { color: #8b949e; font-size: 12px; }
+  .bar { height: 4px; background: #21262d; border-radius: 2px; margin-top: 4px; overflow: hidden; }
+  .bar-fill { height: 100%; background: #58a6ff; }
+  .menu { position: fixed; inset: 0; background: #0d1117; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; z-index: 20; }
+  .menu button { width: 280px; padding: 14px; font-size: 16px; background: #161b22; border: 1px solid #30363d; color: #e6edf3; border-radius: 8px; cursor: pointer; }
+  .mobile-toggle { display: none; position: fixed; top: 12px; right: 12px; z-index: 35; background: #21262d; border: 1px solid #30363d; color: #e6edf3; padding: 6px 10px; border-radius: 6px; font-size: 13px; }
+  @media (max-width: 900px) {
+    .app { flex-direction: column; }
+    .portrait-panel {
+      width: 100%;
+      height: 26vh;
+      min-height: 160px;
+      max-height: 220px;
+      display: block;
+      border-right: none;
+      border-bottom: 1px solid #21262d;
+    }
+    .portrait-panel img, .portrait-avatar {
+      object-fit: cover;
+      object-position: center top;
+    }
+    .portrait-name { bottom: 8px; left: 8px; font-size: 14px; }
+    .story-panel {
+      flex: 1;
+      padding: 10px 12px;
+      overflow-y: auto;
+    }
+    #story { font-size: 15.5px; line-height: 1.75; }
+    .choices button {
+      padding: 13px 12px;
+      font-size: 15px;
+      min-height: 48px;
+    }
+    .free-row {
+      position: sticky;
+      bottom: 0;
+      background: #0d1117;
+      padding: 6px 0 8px;
+      z-index: 5;
+      margin-top: 4px;
+    }
+    .free-row input {
+      font-size: 16px;
+      padding: 12px;
+    }
+    .free-row button {
+      padding: 12px 16px;
+      font-size: 15px;
+      min-width: 70px;
+    }
+    .ctrl-row { gap: 6px; margin-top: 6px; }
+    .ctrl-btn { padding: 8px 10px; font-size: 13px; }
+    .top-bar { font-size: 12px; margin-bottom: 6px; }
+    .sidebar {
+      position: fixed;
+      right: 0;
+      top: 0;
+      height: 100%;
+      width: 82%;
+      max-width: 300px;
+      z-index: 40;
+      transform: translateX(100%);
+      transition: transform 0.3s ease;
+      box-shadow: -4px 0 16px rgba(0,0,0,0.6);
+    }
+    .sidebar.open { transform: translateX(0); }
+    .mobile-toggle { display: block; }
+    .menu button { width: 90%; max-width: 320px; }
+  }
+    .sidebar { position: fixed; right: 0; top: 0; height: 100%; z-index: 25; transform: translateX(100%); transition: 0.3s; }
+    .sidebar.open { transform: translateX(0); }
+    .mobile-toggle { display: block; }
+  }
+</style>
+</head>
+<body>
+<div id="menu" class="menu">
+  <h1 style="color:#c9b8a8; margin-bottom:10px;">獸人世界 · 銀月精靈</h1>
+  <button onclick="startNew()">從頭開始（偷溜出去 · 市集）</button>
+  <button onclick="continueCurrent()">繼續目前劇情</button>
+  <button onclick="loadSave()">依存檔紀錄開始</button>
+</div>
+
+<button class="mobile-toggle" onclick="toggleSidebar()">角色</button>
+
+<div class="app" id="game" style="display:none;">
+  <div class="portrait-panel">
+    <div id="main-portrait-container"></div>
+    <div class="portrait-name" id="portrait-name">凌風</div>
+  </div>
+  <div class="story-panel">
+    <div class="top-bar">
+      <span id="location">森林小徑</span>
+      <span id="time">傍晚前</span>
+    </div>
+    <div id="story"></div>
+    <div class="choices" id="choices"></div>
+    <div class="free-row">
+      <input type="text" id="free-input" placeholder="想說的話、想做的事，或任何回應……">
+      <button onclick="freeAction()">送出</button>
+    </div>
+    <div class="ctrl-row">
+      <button class="ctrl-btn" onclick="rewriteLast()">重寫上一段</button>
+      <button class="ctrl-btn" onclick="undo()">撤回上一步</button>
+    </div>
+  </div>
+  <div class="sidebar" id="sidebar">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+      <span style="font-size:14px; font-weight:500;">角色與狀態</span>
+      <button class="ctrl-btn" onclick="toggleSidebar()" style="padding:4px 8px; font-size:12px;">關閉</button>
+    </div>
+    <h3 id="companion-title">同行者與羈絆 · 獸夫 2 位</h3>
+    <div id="companion-list"></div>
+    <h3>命運之人 · 尚未相遇</h3>
+    <div id="future-list"></div>
+    <h3>家人 · 姊姊一家</h3>
+    <div id="family-list"></div>
+    <h3>身上的印記</h3>
+    <div id="marks"></div>
+    <h3>信物與物品</h3>
+    <div id="items"></div>
+    <h3>旅程紀事</h3>
+    <div id="chronicle" style="color:#8b949e; font-size:12px; line-height:1.6;"></div>
+  </div>
+</div>
+
+<script>
+let state = {
+  scene: "start_market",
+  marks: ["路克", "辰汐"],
+  companions: ["luke", "chenxi", "snake", "lingfeng"],
+  affection: { luke: 88, chenxi: 86, snake: 78, lingfeng: 38 },
+  known: ["kaguya","luke","chenxi","snake","lingfeng","aslan","feiye","cangyan","qinghe","mochen","baize","elina","huiyan","jiangwu","lingxiao","qinghe_sis","muran"],
+  history: [],
+  chronicle: ["從宅邸側門偷溜出去，前往森林市集。"],
+  time: "午後",
+  location: "森林市集"
+};
+
+const characters = {
+  kaguya: { name: "Kaguya", status: "SS級 · 精靈族", portrait: "https://kaguya890825.github.io/ad/%E6%88%91.jpg", type: "self" },
+  luke: { name: "路克", status: "獸夫（狼族獸印）", portrait: "https://kaguya890825.github.io/ad/%E8%B7%AF%E5%85%8B.jpg", type: "companion" },
+  chenxi: { name: "辰汐", status: "獸夫（人魚獸印）", portrait: "https://kaguya890825.github.io/ad/%E8%BE%B0%E6%B1%90.jpg", type: "companion" },
+  snake: { name: "斯內克", status: "思念的舊識（蛇鱗連結）", portrait: "https://kaguya890825.github.io/ad/%E6%96%AF%E5%85%A7%E5%85%8B.jpg", type: "companion" },
+  lingfeng: { name: "凌風", status: "約定之人（贈羽片）", portrait: "https://kaguya890825.github.io/ad/%E5%87%8C%E9%A2%A8.jpg", type: "companion" },
+  aslan: { name: "阿斯蘭", status: "尚未相遇", portrait: "https://kaguya890825.github.io/ad/%E9%98%BF%E6%96%AF%E8%98%AD.jpg", type: "future" },
+  feiye: { name: "緋夜", status: "尚未相遇", portrait: "https://kaguya890825.github.io/ad/%E7%B7%8B%E5%A4%9C.jpg", type: "future" },
+  cangyan: { name: "蒼岩", status: "尚未相遇", portrait: "https://kaguya890825.github.io/ad/%E8%92%BC%E5%B2%A9.jpg", type: "future" },
+  qinghe: { name: "青禾", status: "尚未相遇", portrait: "https://kaguya890825.github.io/ad/%E9%9D%92%E7%A6%BE.jpg", type: "future" },
+  mochen: { name: "墨辰", status: "尚未相遇", portrait: "https://kaguya890825.github.io/ad/%E5%A2%A8%E8%BE%B0.jpg", type: "future" },
+  baize: { name: "白澤", status: "尚未相遇", portrait: "https://kaguya890825.github.io/ad/%E7%99%BD%E6%BE%A4.jpg", type: "future" },
+  elina: { name: "艾麗娜", status: "S級 · 精靈族", portrait: "https://kaguya890825.github.io/ad/%E8%89%BE%E9%BA%97%E5%A8%9C.jpg", type: "family" },
+  huiyan: { name: "灰硯", status: "姊姊的獸夫 · 黑色階·狼族", portrait: "https://kaguya890825.github.io/ad/%E7%81%B0%E7%A1%AF.jpg", type: "family" },
+  jiangwu: { name: "絳無", status: "姊姊的獸夫 · 紫色階·狐族", portrait: "https://kaguya890825.github.io/ad/%E7%B5%B3%E7%84%A1.jpg", type: "family" },
+  lingxiao: { name: "凌霄", status: "姊姊的獸夫 · 黑色階·鷹族", portrait: "https://kaguya890825.github.io/ad/%E5%87%8C%E9%9C%84.jpg", type: "family" },
+  qinghe_sis: { name: "青禾", status: "姊姊的獸夫 · 深藍階·兔族", portrait: "https://kaguya890825.github.io/ad/%E9%9D%92%E7%A6%BE.jpg", type: "family" },
+  muran: { name: "沐然", status: "尚未相遇", portrait: "https://kaguya890825.github.io/ad/%E6%B2%90%E7%84%B6.jpg", type: "future" }
+};
+
+const scenes = {
+  start_market: {
+    location: "森林市集",
+    time: "午後",
+    portrait: "kaguya",
+    text: "你從豪華宅邸的側門偷溜出去，銀白長髮被風吹起。森林市集人聲鼎沸，各種種族的雄性穿梭其中。你拉低兜帽，試圖降低存在感。\n\n遠處有個隱藏攤位，蛇族的氣息隱約傳來。",
+    choices: [
+      { text: "往隱藏攤位走去", next: "snake_stall" },
+      { text: "先在市集慢慢逛逛", next: "wander" },
+      { text: "找個安靜的角落觀察四周", next: "observe" },
+      { text: "透過蛇鱗試著聯繫斯內克", next: "contact_snake" }
+    ]
+  },
+  current_forest: {
+    location: "森林小徑",
+    time: "傍晚前",
+    portrait: "lingfeng",
+    text: "你與凌風走在回程的小徑上。他黑色的羽翼微微收攏，語氣平穩：「如果之後真的用到，我會過來。但前提是你本身沒有處於立即的危險。」\n\n雙印記在皮膚下安靜共鳴。",
+    choices: [
+      { text: "問他平常巡查都在做些什麼", next: "patrol" },
+      { text: "問羽片是不是很少送人", next: "feather_talk" },
+      { text: "安靜走一段，看看他會不會先開口", next: "quiet_walk" },
+      { text: "握著羽片，悄悄注入一點氣息", next: "try_feather" }
+    ]
+  },
+  patrol: {
+    location: "森林小徑",
+    time: "傍晚前",
+    portrait: "lingfeng",
+    text: "凌風簡單說了高空觀察與標記異常的事。他頓了頓：「靠近迷霧沼澤的方向最近有些躁動。所以我不建議你一個人往深處走。」",
+    choices: [
+      { text: "點頭表示知道了", next: "end_approach" },
+      { text: "問他有沒有遇過危險的情況", next: "danger_talk" },
+      { text: "把話題轉到羽片上", next: "feather_talk" },
+      { text: "安靜繼續往前走", next: "end_approach" }
+    ]
+  },
+  end_approach: {
+    location: "宅邸側門附近",
+    time: "傍晚",
+    portrait: "lingfeng",
+    text: "側門已經近在眼前。凌風停下：「到這裡就好。如果之後想確認方向，用羽片叫我。」\n\n他看了你一眼：「……今天，謝謝你。」",
+    choices: [
+      { text: "目送他離開", next: "home" },
+      { text: "叫住他，再說一句話", next: "last_words" },
+      { text: "把羽片握緊，輕聲道謝", next: "home" },
+      { text: "問他之後怎麼聯絡比較好", next: "contact_way" }
+    ]
+  },
+  home: {
+    location: "宅邸側門",
+    time: "傍晚",
+    portrait: "kaguya",
+    text: "你走進側門。雙印記輕微共鳴，像在確認你平安。\n\n掌心的羽片仍帶著凌風的氣息。\n\n（本章暫告一段落）",
+    choices: []
+  }
+};
+
+function pushHistory() {
+  state.history.push(JSON.parse(JSON.stringify(state)));
+  if (state.history.length > 20) state.history.shift();
+}
+
+function undo() {
+  if (state.history.length === 0) return alert("沒有可撤回的步驟");
+  const prev = state.history.pop();
+  state = prev;
+  render();
+}
+
+function rewriteLast() {
+  if (state.history.length === 0) return alert("沒有上一段可重寫");
+  state.history.pop();
+  render();
+  document.getElementById("story").textContent += "\n\n（已撤回上一段，請重新選擇或輸入行動。）";
+}
+
+function freeAction() {
+  const input = document.getElementById("free-input").value.trim();
+  if (!input) return;
+  pushHistory();
+  const story = document.getElementById("story");
+  story.textContent += `\n\n【你】${input}\n\n（你的話語與行動已被世界記錄。若涉及結侶，必須雙方自願並由你明確同意後才會進行儀式。你可以繼續輸入，或選擇上方的選項。）`;
+  state.chronicle.push(`自由行動：${input}`);
+  document.getElementById("free-input").value = "";
+  story.scrollTop = story.scrollHeight;
+  renderSidebar();
+  localStorage.setItem("kaguya_full", JSON.stringify(state));
+}
+
+function renderPortrait(id) {
+  const c = characters[id] || { name: "未知", portrait: null };
+  const container = document.getElementById("main-portrait-container");
+  if (c.portrait) {
+    container.innerHTML = `<img src="${c.portrait}" alt="${c.name}">`;
+  } else {
+    container.innerHTML = `<div class="portrait-avatar">${(c.name||"?").charAt(0)}</div>`;
+  }
+  document.getElementById("portrait-name").textContent = c.name || "未知";
+}
+
+function renderSidebar() {
+  const companionList = document.getElementById("companion-list");
+  const futureList = document.getElementById("future-list");
+  const familyList = document.getElementById("family-list");
+  companionList.innerHTML = futureList.innerHTML = familyList.innerHTML = "";
+
+  document.getElementById("companion-title").textContent = `同行者與羈絆 · 獸夫 ${state.marks.length} 位`;
+  document.getElementById("marks").innerHTML = state.marks.map(m => `${m}獸印`).join("<br>") || "無";
+  document.getElementById("items").innerHTML = "凌風的羽片<br><small style='color:#8b949e'>注入氣息即可召喚</small>";
+  document.getElementById("chronicle").innerHTML = state.chronicle.slice(-8).map(c => "· " + c).join("<br>");
+
+  Object.entries(characters).forEach(([id, c]) => {
+    if (!state.known.includes(id) && c.type !== "self") return;
+    const card = document.createElement("div");
+    card.className = "char-card";
+    const avatar = c.portrait ? `<img src="${c.portrait}">` : `<div class="char-avatar">${c.name.charAt(0)}</div>`;
+    const aff = state.affection[id] || 0;
+    card.innerHTML = `${avatar}<div class="char-info"><div class="char-name">${c.name}</div><div class="char-status">${c.status}</div>${aff>0?`<div class="bar"><div class="bar-fill" style="width:${aff}%"></div></div>`:""}</div>`;
+    if (c.type === "companion" || c.type === "self" || state.companions.includes(id)) companionList.appendChild(card);
+    else if (c.type === "future") futureList.appendChild(card);
+    else if (c.type === "family") familyList.appendChild(card);
+  });
+}
+
+function render() {
+  const scene = scenes[state.scene] || scenes.current_forest;
+  document.getElementById("location").textContent = scene.location || state.location;
+  document.getElementById("time").textContent = scene.time || state.time;
+  document.getElementById("story").textContent = scene.text;
+  renderPortrait(scene.portrait);
+  renderSidebar();
+
+  const choicesDiv = document.getElementById("choices");
+  choicesDiv.innerHTML = "";
+  (scene.choices || []).slice(0,4).forEach(choice => {
+    const btn = document.createElement("button");
+    btn.textContent = "◆ " + choice.text;
+    btn.onclick = () => {
+      pushHistory();
+      state.scene = choice.next;
+      if (scene.location) state.location = scene.location;
+      if (scene.time) state.time = scene.time;
+      state.chronicle.push(choice.text);
+      render();
+      localStorage.setItem("kaguya_full", JSON.stringify(state));
+    };
+    choicesDiv.appendChild(btn);
+  });
+}
+
+function toggleSidebar() {
+  document.getElementById("sidebar").classList.toggle("open");
+}
+
+function startNew() {
+  state = {
+    scene: "start_market",
+    marks: [],
+    companions: [],
+    affection: {},
+    known: ["kaguya"],
+    history: [],
+    chronicle: ["從宅邸側門偷溜出去。"],
+    time: "午後",
+    location: "森林市集"
+  };
+  document.getElementById("menu").style.display = "none";
+  document.getElementById("game").style.display = "flex";
+  render();
+}
+
+function continueCurrent() {
+  state.scene = "current_forest";
+  document.getElementById("menu").style.display = "none";
+  document.getElementById("game").style.display = "flex";
+  render();
+}
+
+function loadSave() {
+  const saved = localStorage.getItem("kaguya_full");
+  if (saved) {
+    state = JSON.parse(saved);
+    document.getElementById("menu").style.display = "none";
+    document.getElementById("game").style.display = "flex";
+    render();
+  } else alert("沒有存檔");
+}
+</script>
+</body>
+</html>
